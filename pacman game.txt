@@ -1,0 +1,166 @@
+from random import choice
+from turtle import *
+from freegames import floor, vector
+
+
+
+
+state = {'score': 0}
+path = Turtle(visible=False) #highlited the score and dot also
+writer = Turtle(visible=False)
+aim = vector(-5, 0) # firstly move which side
+pacman = vector(-00, -00) # first possition of pacman
+ghosts = [
+    [vector(-180, 160), vector(5, 0)],
+    [vector(-180, -160), vector(0, 5)],# four different possition of ghosts
+    [vector(100, 160), vector(0, -5)],
+    [vector(100, -160), vector(-5, 0)],
+]
+tiles = [
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0,
+    0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0,
+    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0,  # tiles possition
+    0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0,
+    0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0,
+    0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0,
+    0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0,
+    0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0,
+    0, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0,
+    0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0,
+    0, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0,
+    0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
+    0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0,
+    0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 0,
+    0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0,
+    0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
+    0, 1, 0, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,
+    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+]
+
+def rectangle(x, y): #shape of tiles
+    "Draw square using path at (x, y)."
+    path.up()
+    path.goto(x, y)
+    path.down()
+    path.begin_fill()
+
+    for count in range(4):
+        path.forward(20)
+        path.left(90)  #dislocate the square
+
+    path.end_fill()
+
+def offset(star):
+    "Return offset of star in tiles."
+    x = (floor(star.x, 20) + 200) / 20
+    y = (180 - floor(star.y, 20)) / 20
+    index = int(x + y * 20)
+    return index
+
+def valid(star):
+    "Return True if star is valid in tiles."
+    index = offset(star)
+
+    if tiles[index] == 0:   # IF THERE IS TRUE THEN  ENIME IS ABLE TO MOVE OUTSIDE TILE
+        return False
+
+    index = offset(star + 19)
+
+    if tiles[index] == 0:
+        return False
+
+    return star.x % 20 == 0 or star.y % 20 == 0
+
+def world():
+    "Draw world using path."
+    bgcolor('yellow')  # optional we can use bgpic()
+    path.color('black') ##########
+
+    for index in range(len(tiles)):
+        tile = tiles[index]
+
+        if tile > 0: # if we put < then its makes theere path own
+            x = (index % 20) * 20 - 200
+            y = 180 - (index // 20) * 20
+            rectangle(x, y)
+
+            if tile == 1:
+                path.up()
+                path.goto(x + 5, y + 5)  # regarding to the point present in the path
+                path.dot(8,'green')
+
+def move():
+    "Move pacman and all ghosts."
+    writer.undo()
+    writer.write(state['score'])
+
+    clear()
+
+    if valid(pacman + aim):
+        pacman.move(aim)
+
+    index = offset(pacman)
+
+    if tiles[index] == 1: # if we nt give here 1 then dots in path are visible
+        tiles[index] = 2 # we can hack the point here
+        state['score'] += 1
+        x = (index % 20) * 20 - 200
+        y = 180 - (index // 20) * 20
+        rectangle(x, y)
+
+    up()
+    goto(pacman.x + 10, pacman.y + 10)
+    dot(20, "pink")
+
+    for star, course in ghosts:
+        if valid(star + course):
+            star.move(course)
+        else:
+            options = [
+                vector(5, 0),
+                vector(-5, 0),
+                vector(0, 5),
+                vector(0, -5),
+            ]
+            plan = choice(options)
+            course.x = plan.x
+            course.y = plan.y
+
+        up()
+        goto(star.x + 10, star.y + 10)
+        dot(20, 'sky blue')
+
+    update()
+
+    for star, course in ghosts:
+        if abs(pacman - star) < 20:
+            return
+
+    ontimer(move, 100)
+
+def change(x, y):
+    "Change pacman aim if valid."
+    if valid(pacman + vector(x, y)):
+        aim.x = x
+        aim.y = y
+
+
+hideturtle()
+tracer(False)
+writer.goto(300, 200)#score place
+writer.dot(100,"gray")
+writer.pensize(1000)
+
+writer.write(state['score'])
+writer.write("SCORE")
+print("SCORE")
+listen()
+onkey(lambda: change(5, 0), 'Right')
+onkey(lambda: change(-5, 0), 'Left')
+onkey(lambda: change(0, 5), 'Up')
+onkey(lambda: change(0, -5), 'Down')
+world()
+move()
+done()
